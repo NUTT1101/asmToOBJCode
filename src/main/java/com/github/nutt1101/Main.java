@@ -1,15 +1,19 @@
 package com.github.nutt1101;
 
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.io.InputStream;
-
-// Press Shift twice to open the Search Everywhere dialog and type `show whitespaces`,
-// then press Enter. You can now see whitespace characters in your code.
 public class Main {
-    public static void main(String[] args) throws IOException {
+    static final String currentPath;
+    static List<AddressedCode> addressedCodes;
 
+    static {
+        currentPath = System.getProperty("user.dir");
+        addressedCodes = new ArrayList<>();
+    }
+
+    public static void main(String[] args) throws FileNotFoundException {
+         ObjectCodeEncoder.encode(addressedCodes);
     }
 }

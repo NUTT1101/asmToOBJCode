@@ -5,12 +5,11 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class Introduction {
+public class IntroductionTable {
     static {
         try {
             init();
         } catch (IOException e) {
-            // TODO: handle
             e.printStackTrace();
         }
     }
@@ -18,7 +17,7 @@ public class Introduction {
     private static JSONObject introductions;
 
     private static void init() throws IOException {
-        InputStream inputStream = Introduction.class.getClassLoader()
+        InputStream inputStream = IntroductionTable.class.getClassLoader()
                 .getResourceAsStream("introductions.json");
         assert inputStream != null;
         String incString = new String(inputStream.readAllBytes());
@@ -26,7 +25,10 @@ public class Introduction {
         inputStream.close();
     }
 
-    public static String getCode(String inc) {
-        return introductions.getString(inc);
+    public static String getCode(String intro) {
+        if (introductions.isNull(intro)) {
+            return "";
+        }
+        return introductions.getString(intro);
     }
 }
