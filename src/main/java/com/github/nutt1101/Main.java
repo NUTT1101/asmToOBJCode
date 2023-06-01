@@ -73,6 +73,8 @@ public class Main {
     private static String getOutputFileName(String fileName) {
         Pattern pattern = Pattern.compile("\\d+");
         Matcher matcher = pattern.matcher(fileName);
-        return matcher.find() ? matcher.group() :("OUTPUT-" + fileName);
+        return matcher.find() && fileName.equals(matcher.group())
+                ? matcher.group()
+                : ("OUTPUT-" + fileName);
     }
 }

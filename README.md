@@ -13,6 +13,9 @@
 程式使用說明:
 - 環境: **[Java17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)** 以上(低於此版本可能導致無法正常執行)。
 - 使用方式: 準備一檔案 `sample001.txt`，並將此檔案與此程式的`.jar`檔案放置於同個資料夾下(不同資料夾下須指定路徑)，使用
+
+**注意!請避免使用全形符號!**
+
 ```bash
 java -jar <程式名>.jar <檔案>.txt
 ```
