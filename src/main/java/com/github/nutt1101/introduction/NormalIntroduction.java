@@ -17,12 +17,12 @@ public class NormalIntroduction extends AddressedIntroduction{
         this.first = first;
     }
 
-    public void setArgs(List<String> args) {
-        this.args = args;
-    }
-
     public String getFirst() {
         return first;
+    }
+
+    public void setArgs(List<String> args) {
+        this.args = args;
     }
 
     public List<String> getArgs() {

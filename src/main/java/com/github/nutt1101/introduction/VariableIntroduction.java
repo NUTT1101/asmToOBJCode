@@ -3,10 +3,11 @@ package com.github.nutt1101.introduction;
 import com.github.nutt1101.ObjectCodeEncoder;
 
 import java.util.List;
-import java.util.Locale;
 
 public class VariableIntroduction extends AddressedIntroduction {
     private VariableType variableType;
+    private String variableName;
+    private List<String> numbers;
 
     public VariableType getVariableType() {
         return variableType;
@@ -31,10 +32,6 @@ public class VariableIntroduction extends AddressedIntroduction {
     public void setNumbers(List<String> numbers) {
         this.numbers = numbers;
     }
-
-    private String variableName;
-    private List<String> numbers;
-
 
     public VariableIntroduction(String address, String lineIntroduction, String programmingCounter) {
         super(address, lineIntroduction, programmingCounter);

@@ -1,16 +1,11 @@
 package com.github.nutt1101;
 
 import com.github.nutt1101.calculator.HexCalculator;
-import com.github.nutt1101.introduction.AddressedIntroduction;
-import com.github.nutt1101.introduction.CodeBlockIntroduction;
-import com.github.nutt1101.introduction.NormalIntroduction;
-import com.github.nutt1101.introduction.VariableIntroduction;
+import com.github.nutt1101.introduction.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -22,63 +17,60 @@ public class ObjectCodeEncoder {
     private static final String startAddress = "0000";
     private static final String variableSyntax = "^[A-Za-z]+:[ \t]+(WORD|RESW|RESB|BYTE)[ \t]+[^ ]+(,[ \t]*[^ ,]+)*[ \t]*$";
     private static final String codeBlockSyntax= "(^[A-Za-z]+:.*)|(^[A-Za-z]+:)";
-    private static String registerSyntax = "^\\[?R(?:[0-9]|[1-9][0-9]|99)]?$";
+    private static final String  registerSyntax = "^\\[?R(?:[0-9]|[1-9][0-9]|99)]?$";
 
-    public static String encode(List<AddressedIntroduction> addressedCodes) throws FileNotFoundException {
-        File readFile = new File(currentPath + "/06.txt");
-        Scanner scanner = new Scanner(readFile);
+    public static List<AddressedIntroduction> encode(String fileName) throws FileNotFoundException {
+        List<String> fileIntros = getAllIntroductionsFromFileName(fileName);
+        List<AddressedIntroduction> addressedCodes = new ArrayList<>();
+        String nextAddress = startAddress,
+                currentAddress = startAddress;
 
-        String currentAddress = startAddress,
-                lastAddress = startAddress;
-
-        while (scanner.hasNext()) {
-            String intro = trim(scanner.nextLine());
+        for (String sourceIntro : fileIntros) {
+            String intro = trim(sourceIntro);
             AddressedIntroduction addressedCode;
-            if (!currentAddress.equals(lastAddress)) {
-                lastAddress =currentAddress;
+            if (!nextAddress.equals(currentAddress)) {
+                currentAddress = nextAddress;
             }
 
             if (isVariable(intro)) {
-                currentAddress = HexCalculator.add(
-                        lastAddress,
+                nextAddress = HexCalculator.add(
+                        currentAddress,
                         HexCalculator.decimalToHex(getTotalAddSize(intro))
                 );
-                addressedCode = new VariableIntroduction(lastAddress, intro, currentAddress);
-            } else if (!isCodeBlock(intro)){
-                currentAddress = HexCalculator.add(lastAddress, "4");
-                addressedCode = new NormalIntroduction(lastAddress, intro, currentAddress);
+                addressedCode = new VariableIntroduction(currentAddress, intro, nextAddress);
+            } else if (!isCodeBlock(intro)) {
+                nextAddress = HexCalculator.add(currentAddress, "4");
+                addressedCode = new NormalIntroduction(currentAddress, intro, nextAddress);
             } else {
                 String[] intros;
                 if ((intros = codeBlockStringBreaker(intro)) != null) {
-                    currentAddress = HexCalculator.add(lastAddress, "4");
+                    nextAddress = HexCalculator.add(currentAddress, "4");
                     addressedCodes.add(
-                            new CodeBlockIntroduction(lastAddress, intros[0], currentAddress)
+                            new CodeBlockIntroduction(currentAddress, intros[0], nextAddress)
                     );
                     addressedCodes.add(
-                            new NormalIntroduction(lastAddress, intros[1], currentAddress)
+                            new NormalIntroduction(currentAddress, intros[1], nextAddress)
                     );
                     continue;
                 } else {
-                    addressedCode = new CodeBlockIntroduction(lastAddress, intro, currentAddress);
+                    addressedCode = new CodeBlockIntroduction(currentAddress, intro, nextAddress);
                 }
             }
-            
+
             addressedCodes.add(addressedCode);
         }
-
-        addressedCodes.get(addressedCodes.size() - 1).setProgrammingCounter(null);
-
-        System.out.printf(
-                "%-10s %-30s %-30s%n",
-                "Address",
-                "Introduction",
-                "Object Code"
-        );
-
+        addressedCodes.get(addressedCodes.size() - 1).setProgrammingCounter(null); //last introduction doesn't have pc
         generateObjectCode(addressedCodes);
+        return addressedCodes;
+    }
 
-        addressedCodes.forEach(e -> System.out.printf("%-10s %-30s %-30s%n", e.getAddress(), e.getLineIntroduction(), e.getObjectCode()));
-        return "";
+    private static List<String> getAllIntroductionsFromFileName(String fileName) throws FileNotFoundException {
+        List<String> intros = new ArrayList<>();
+        File readFile = new File(currentPath + fileName);
+        Scanner scanner = new Scanner(readFile);
+        while (scanner.hasNext()) intros.add(scanner.nextLine());
+        scanner.close();
+        return intros;
     }
 
     private static String[] codeBlockStringBreaker(String str) {
@@ -108,23 +100,10 @@ public class ObjectCodeEncoder {
                         sb.insert(sb.length(), hex);
                         break;
                     } else {
-                        for (var varIntro : addressedCodes) {
-                            if (varIntro instanceof VariableIntroduction vi) {
-                                if (vi.getVariableName().equals(arg)) {
-                                    String pc = ni.getProgrammingCounter();
-                                    String des = vi.getAddress();
-                                    absoluteAddressing = HexCalculator.sub(des, pc);
-                                    break;
-                                }
-                            } else if (varIntro instanceof CodeBlockIntroduction cbi) {
-                                if (cbi.getLineIntroduction().contains(arg)) {
-                                    String pc = ni.getProgrammingCounter();
-                                    String des = cbi.getAddress();
-                                    absoluteAddressing = HexCalculator.sub(des, pc);
-                                    break;
-                                }
-                            }
-                        }
+                        absoluteAddressing = calculateRelativeAddress(
+                                findDestinationAddress(addressedCodes, arg),
+                                ni.getProgrammingCounter()
+                        );
                     }
                 }
 
@@ -162,19 +141,12 @@ public class ObjectCodeEncoder {
                                 sb.insert(sb.length(), current + hexNumber);
 
                             } else {
-                                addressedCodes.forEach(a -> {
-                                    StringBuilder nsb = new StringBuilder();
-                                    if (a instanceof VariableIntroduction vi2) {
-                                        if (vi2.getVariableName().equals(number)) {
-                                            String address = vi2.getAddress();
-                                            while (nsb.length() < (8 - address.length())) {
-                                                nsb.insert(nsb.length(), 0);
-                                            }
-                                            nsb.insert(nsb.length(), address);
-                                        }
-                                    }
-                                    sb.insert(0,nsb);
-                                });
+                                String address = findDestinationAddress(addressedCodes, number);
+                                if (address == null) return;
+                                while (sb.length() < (8 - address.length())) {
+                                    sb.insert(sb.length(), 0);
+                                }
+                                sb.insert(sb.length(), address);
                             }
                         }
                         case RESW -> {
@@ -203,6 +175,30 @@ public class ObjectCodeEncoder {
 
     }
 
+    private static String findDestinationAddress(List<AddressedIntroduction> introductions, String destination) {
+        String foundAddress = null;
+        for (AddressedIntroduction a : introductions) {
+            if (a instanceof VariableIntroduction vi2) {
+                if (vi2.getVariableName().equals(destination)) {
+                    foundAddress = vi2.getAddress();
+                    break;
+                }
+            } else if (a instanceof CodeBlockIntroduction cbi) {
+                if (cbi.getLineIntroduction().contains(destination)) {
+                    foundAddress = cbi.getAddress();
+                    break;
+                }
+            }
+        }
+
+        return foundAddress;
+    }
+
+
+    private static String calculateRelativeAddress(String des, String pc) {
+        return HexCalculator.sub(des, pc);
+    }
+
     private static boolean isVariable(String intro) {
         return intro.matches(variableSyntax);
     }
@@ -219,19 +215,16 @@ public class ObjectCodeEncoder {
         return intro.replace("\t", " ");
     }
 
-    private static Integer getTypeSize(String type) {
-        HashMap<String, Integer> table = new HashMap<>();
-        table.put("WORD", 4);
-        table.put("BYTE", 1);
-        table.put("RESW", 4);
-        table.put("RESB", 1);
-        return table.getOrDefault(type, null); // TODO: handle
+    private static Integer getTypeSize(VariableType type) {
+        if (type == VariableType.RESW || type == VariableType.WORD) return 4;
+        if (type == VariableType.RESB || type == VariableType.BYTE) return 1;
+        return null;
     }
 
     private static int getTotalAddSize(String intro) {
         List<String> list = getPureIntroduction(intro);
         String type = list.get(1);
-        Integer size = getTypeSize(type);
+        Integer size = getTypeSize(VariableType.valueOf(type));
         int count = 0;
 
         if (type.toUpperCase().contains("RES")) {

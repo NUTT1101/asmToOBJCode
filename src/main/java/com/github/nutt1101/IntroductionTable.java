@@ -14,21 +14,25 @@ public class IntroductionTable {
         }
     }
 
-    private static JSONObject introductions;
+    private static JSONObject table;
 
     private static void init() throws IOException {
+        readTableFromResource();
+    }
+
+    public static String getCode(String intro) {
+        if (table.isNull(intro)) {
+            return null;
+        }
+        return table.getString(intro);
+    }
+
+    private static void readTableFromResource() throws IOException {
         InputStream inputStream = IntroductionTable.class.getClassLoader()
                 .getResourceAsStream("introductions.json");
         assert inputStream != null;
         String incString = new String(inputStream.readAllBytes());
-        introductions = new JSONObject(incString);
+        table = new JSONObject(incString);
         inputStream.close();
-    }
-
-    public static String getCode(String intro) {
-        if (introductions.isNull(intro)) {
-            return "";
-        }
-        return introductions.getString(intro);
     }
 }

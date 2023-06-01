@@ -6,8 +6,18 @@ public class AddressedIntroduction {
     protected String objectCode;
     protected String programmingCounter;
 
+    public AddressedIntroduction(String address, String lineIntroduction, String programmingCounter) {
+        this.address = this.fillZero(address);
+        this.lineIntroduction = lineIntroduction;
+        this.programmingCounter = this.fillZero(programmingCounter);
+    }
+
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getAddress() {
+        return address;
     }
 
     public String getProgrammingCounter() {
@@ -16,16 +26,6 @@ public class AddressedIntroduction {
 
     public void setProgrammingCounter(String programmingCounter) {
         this.programmingCounter = programmingCounter;
-    }
-
-    public AddressedIntroduction(String address, String lineIntroduction, String programmingCounter) {
-        this.address = this.fillZero(address);
-        this.lineIntroduction = lineIntroduction;
-        this.programmingCounter = this.fillZero(programmingCounter);
-    }
-
-    public String getAddress() {
-        return address;
     }
 
     public void setObjectCode(String objectCode) {
@@ -56,9 +56,11 @@ public class AddressedIntroduction {
             i++;
         }
 
-        while (operator.length() < Math.pow(2, i)) {
-            operator = "0" + operator;
+        StringBuilder operatorBuilder = new StringBuilder(operator);
+        while (operatorBuilder.length() < Math.pow(2, i)) {
+            operatorBuilder.insert(0, "0");
         }
+        operator = operatorBuilder.toString();
 
         return operator;
     }
