@@ -109,11 +109,9 @@ public class ObjectCodeEncoder {
 
                 if (!absoluteAddressing.isBlank() || !absoluteAddressing.isEmpty()) {
                     sb.insert(sb.length(), "F");
-
                     if (absoluteAddressing.length() + sb.length() > 8) {
                         absoluteAddressing = absoluteAddressing.substring(
-                                sb.length() - 1,
-                                absoluteAddressing.length() - 1
+                                absoluteAddressing.length() - (8 - sb.length())
                         );
                     }
 
